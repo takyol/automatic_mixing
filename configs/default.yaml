@@ -1,0 +1,14 @@
+data_processed_root: data_processed
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 1000
+val_clips: 200
+val_fraction: 0.1
+split_seed: 0
+batch_size: 16
+lr: 0.0003
+num_epochs: 200
+checkpoint_dir: checkpoints
+log_dir: runs/default
+device: auto
+checkpoint_every: 5

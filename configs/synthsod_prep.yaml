@@ -1,0 +1,9 @@
+# SynthSOD directory layout: these are placeholder example
+# values, not verified against the actual dataset.
+raw_root: data/synthsod
+output_root: data_processed
+target_sample_rate: 44100
+close_mic_glob: "CloseMic/*.wav"
+tree_mic_files:
+  - "Tree/L.wav"
+  - "Tree/R.wav"

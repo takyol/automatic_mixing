@@ -1,0 +1,5 @@
+raw_root: data/spheres
+output_root: data_processed
+target_sample_rate: 44100
+stems_subdir: "spot_mics"
+mix_filename: "mix.wav"
