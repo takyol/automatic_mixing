@@ -22,7 +22,7 @@ Create a virtual environment and install the package:
 
 ```
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate # for Windows Power Shell run: venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 ```
 
