@@ -28,6 +28,16 @@ pip install -e ".[dev]"
 
 On Windows, if `python` resolves to an interpreter older than 3.9 or `venv` creation fails, use the `py` launcher to pick a specific installed version instead, e.g. `py -3.11 -m venv venv`.
 
+### GPU on Windows
+
+On Windows, PyPI's default `torch`/`torchaudio` wheels are CPU-only. `pip install -e ".[dev]"` will install and silently succeed without CUDA support even if you have an NVIDIA GPU. To get GPU support, reinstall from PyTorch's own index after the regular install, matching the pinned versions in `pyproject.toml` and a CUDA build supported by your driver (check `nvidia-smi` for your driver's max supported CUDA version):
+
+```
+pip install torch==2.7.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu126
+```
+
+Verify with `python -c "import torch; print(torch.cuda.is_available())"`. Note this step isn't captured by `pyproject.toml`, so it needs to be redone any time this venv is recreated from scratch.
+
 ## Preparing data
 
 Two datasets are supported: SynthSOD and Spheres. Each has its own prep script that converts the raw dataset into a common folder layout (`data_processed/<song>/stems/*.wav` and `data_processed/<song>/target.wav`).

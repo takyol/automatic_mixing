@@ -7,8 +7,11 @@ name = "automix"
 version = "0.1.0"
 requires-python = ">=3.9"
 dependencies = [
-    "torch>=2.0",
-    "torchaudio>=2.0",
+    # Pinned: torchaudio removed torchaudio.prototype.pipelines.VGGISH
+    # (which vggish.py depends on) in later releases; torch is pinned
+    # to the matching compatible release.
+    "torch==2.7.1",
+    "torchaudio==2.7.1",
     "pyyaml>=6.0",
     "tensorboard>=2.14",
     "soundfile>=0.12",
