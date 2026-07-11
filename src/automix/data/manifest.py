@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass
 from pathlib import Path
-import torchaudio
+from automix.audio_io import frame_count
 
 
 @dataclass
@@ -30,12 +30,11 @@ def build_manifest(processed_root: Path) -> list:
         stem_paths = sorted(stems_dir.glob("*.wav"))
         if not stem_paths:
             continue
-        info = torchaudio.info(str(target_path))
         entries.append(SongEntry(
             song_id=song_dir.name,
             stem_paths=stem_paths,
             target_path=target_path,
-            num_frames=info.num_frames,
+            num_frames=frame_count(target_path),
         ))
     return entries
 

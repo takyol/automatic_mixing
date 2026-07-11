@@ -18,13 +18,15 @@ The network only learns to predict gain and pan. It does not generate audio itse
 
 ## Setup
 
-Create a virtual environment and install the package:
+Requires Python 3.9+. Create a virtual environment and install the package:
 
 ```
 python -m venv venv
 source venv/bin/activate # for Windows Power Shell run: venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 ```
+
+On Windows, if `python` resolves to an interpreter older than 3.9 or `venv` creation fails, use the `py` launcher to pick a specific installed version instead, e.g. `py -3.11 -m venv venv`.
 
 ## Preparing data
 

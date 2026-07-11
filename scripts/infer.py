@@ -7,7 +7,7 @@ Usage: python scripts/infer.py --stems-dir path/to/stems --checkpoint checkpoint
 import argparse
 from pathlib import Path
 import torch
-import torchaudio
+from automix.audio_io import save_wav
 from automix.inference import render_mix
 
 
@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
 
     mix, sample_rate = render_mix(args.stems_dir, args.checkpoint, device=args.device)
-    torchaudio.save(str(args.output), mix, sample_rate)
+    save_wav(args.output, mix, sample_rate)
 
 
 if __name__ == "__main__":

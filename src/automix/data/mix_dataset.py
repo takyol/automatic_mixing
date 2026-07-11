@@ -1,17 +1,23 @@
 import random
 import torch
-import torchaudio
 from torch.utils.data import Dataset
+from automix.audio_io import load_wav
 
 
 class MixDataset(Dataset):
-    """Draws random 5-second clips, then a random offset within it.
+    """Draws `clips_per_epoch` random 5-second clips, one song chosen
+    uniformly at random per draw, then a random offset within it.
 
     Each item: (stems: Tensor(N, T), target: Tensor(2, T)) at the
-    corpus's sample rate.
+    corpus's canonical sample rate.
 
     The (song, offset) draws are precomputed and stored in `_draws` so
-    that `__getitem__` is a pure index lookup.
+    that `__getitem__` is a pure index lookup — this keeps behavior
+    correct and reproducible under multi-worker DataLoader, where a
+    stateful RNG called inside `__getitem__` would give inconsistent
+    results across worker processes. Call `resample()` to redraw the
+    clip set (e.g. once per training epoch); leave untouched for a
+    fixed validation set.
     """
 
     def __init__(self, entries: list, sample_rate: int, clip_seconds: float = 5.0,
@@ -39,13 +45,13 @@ class MixDataset(Dataset):
 
     def __getitem__(self, index):
         entry, start = self._draws[index]
+
         stems = []
-        
         for stem_path in entry.stem_paths:
-            waveform, _ = torchaudio.load(str(stem_path), frame_offset=start, num_frames=self.clip_frames)
+            waveform, _ = load_wav(stem_path, frame_offset=start, num_frames=self.clip_frames)
             stems.append(waveform.mean(dim=0))
-        
         stems_tensor = torch.stack(stems, dim=0)
-        target, _ = torchaudio.load(str(entry.target_path), frame_offset=start, num_frames=self.clip_frames)
+
+        target, _ = load_wav(entry.target_path, frame_offset=start, num_frames=self.clip_frames)
 
         return stems_tensor, target

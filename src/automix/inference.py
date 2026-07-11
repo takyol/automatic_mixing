@@ -1,7 +1,7 @@
 from pathlib import Path
 import torch
 import torch.nn.functional as F
-import torchaudio
+from automix.audio_io import load_wav
 from automix.model.automix_model import AutomixModel
 
 
@@ -10,7 +10,8 @@ def render_mix(stems_dir: Path, checkpoint_path: Path, vggish_backbone=None, dev
     trained checkpoint. Returns (mix: Tensor(2, T), sample_rate: int).
 
     All stems must share the same sample rate; they're padded to the
-    length of the longest stem.
+    length of the longest stem (real-world stem lengths in a single
+    take can differ by a handful of samples at the tail).
     """
     stems_dir = Path(stems_dir)
     stem_paths = sorted(stems_dir.glob("*.wav"))
@@ -20,7 +21,7 @@ def render_mix(stems_dir: Path, checkpoint_path: Path, vggish_backbone=None, dev
     waveforms = []
     sample_rate = None
     for path in stem_paths:
-        waveform, sr = torchaudio.load(str(path))
+        waveform, sr = load_wav(path)
         if sample_rate is None:
             sample_rate = sr
         elif sr != sample_rate:

@@ -11,7 +11,7 @@ dependencies = [
     "torchaudio>=2.0",
     "pyyaml>=6.0",
     "tensorboard>=2.14",
-    "numpy<2",
+    "soundfile>=0.12",
 ]
 
 [project.optional-dependencies]
