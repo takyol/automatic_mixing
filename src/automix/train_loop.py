@@ -43,10 +43,11 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir=str(log_dir))
 
+    print(f"Training on device: {device}")
     model.to(device)
     optimizer = torch.optim.Adam(model.mlp.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=20)
-    loss_fn = MultiResolutionSTFTLoss()
+    loss_fn = MultiResolutionSTFTLoss().to(device)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                                collate_fn=collate_variable_tracks)
@@ -64,6 +65,7 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
         writer.add_scalar("loss/train", train_loss, epoch)
         writer.add_scalar("loss/val", val_loss, epoch)
         writer.add_scalar("lr", current_lr, epoch)
+        print(f"epoch {epoch + 1}/{num_epochs}  train_loss={train_loss:.4f}  val_loss={val_loss:.4f}  lr={current_lr:.2e}")
 
         checkpoint = {
             "epoch": epoch,
