@@ -9,6 +9,9 @@ batch_size: 16
 lr: 0.0003
 num_epochs: 200
 checkpoint_dir: checkpoints
-log_dir: runs/default
+log_dir: runs
 device: auto
 checkpoint_every: 5
+# Parallel data-loading workers. Keep 0 on macOS/MPS (deadlocks observed);
+# raise to e.g. 4 on Linux/CUDA machines.
+num_workers: 0

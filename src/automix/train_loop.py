@@ -38,7 +38,7 @@ def run_epoch(model, loader, loss_fn, optimizer=None, device="cpu"):
 
 def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
           lr: float, checkpoint_dir: Path, log_dir: Path, device: str = "cpu",
-          checkpoint_every: int = 1):
+          checkpoint_every: int = 1, num_workers: int = 0):
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir=str(log_dir))
@@ -49,10 +49,14 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=20)
     loss_fn = MultiResolutionSTFTLoss().to(device)
 
+    # Workers must not be persistent: resample() redraws the clip set in the
+    # main process each epoch, and only freshly spawned workers pick that up.
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
-                               collate_fn=collate_variable_tracks)
+                               collate_fn=collate_variable_tracks,
+                               num_workers=num_workers)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,
-                             collate_fn=collate_variable_tracks)
+                             collate_fn=collate_variable_tracks,
+                             num_workers=num_workers)
 
     best_val_loss = float("inf")
     for epoch in range(num_epochs):

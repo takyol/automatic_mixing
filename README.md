@@ -57,7 +57,7 @@ Once the data is prepared:
 python scripts/train.py --config configs/default.yaml
 ```
 
-This writes checkpoints to `checkpoints/` and logs to `runs/default`, which you can view with TensorBoard.
+Every run gets its own name, `<date>_<time>_<config name>` (e.g. `2026-07-13_2352_default`), or a custom one via an optional `run_name` key in the config. Checkpoints go to `checkpoints/<run name>/` (alongside a copy of the config used), TensorBoard logs to `runs/<run name>/`. Point TensorBoard at the root to compare runs: `tensorboard --logdir runs/`.
 
 ## Rendering a mix
 
