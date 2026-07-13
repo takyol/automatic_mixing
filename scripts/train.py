@@ -5,10 +5,12 @@ Usage: python scripts/train.py --config configs/default.yaml
 """
 import argparse
 from pathlib import Path
-import torch
+
 import yaml
+
 from automix.data.manifest import build_manifest, split_train_val
 from automix.data.mix_dataset import MixDataset
+from automix.device import resolve_device
 from automix.model.automix_model import AutomixModel
 from automix.train_loop import train
 
@@ -37,9 +39,7 @@ def main():
 
     model = AutomixModel(native_sample_rate=sample_rate)
 
-    device = config.get("device", "auto")
-    if device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = resolve_device(config.get("device", "auto"))
 
     train(
         model, train_dataset, val_dataset,
@@ -49,7 +49,7 @@ def main():
         checkpoint_dir=Path(config["checkpoint_dir"]),
         log_dir=Path(config["log_dir"]),
         device=device,
-        checkpoint_every=config.get("checkpoint_every", 5),
+        checkpoint_every=config.get("checkpoint_every", 1),
     )
 
 
