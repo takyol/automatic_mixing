@@ -1,0 +1,22 @@
+# Datasets and generated outputs
+data/
+data_processed/
+checkpoints/
+checkpoints_smoke/
+runs/
+
+# Python virtual environment
+venv/
+.venv/
+
+# Python build/cache artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# IDE settings
+.idea/
+.vscode/
+
+# macOS
+.DS_Store

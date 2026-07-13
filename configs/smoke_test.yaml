@@ -1,0 +1,14 @@
+data_processed_root: data_processed
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 64
+val_clips: 16
+val_fraction: 0.1
+split_seed: 0
+batch_size: 4
+lr: 0.0003
+num_epochs: 2
+checkpoint_dir: checkpoints_smoke
+log_dir: runs/smoke_test
+device: auto
+checkpoint_every: 1
