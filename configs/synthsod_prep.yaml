@@ -3,7 +3,7 @@
 # "Tree/<Instrument>.flac" (stereo main-array render per instrument,
 # summed together to form the stereo target mixture).
 raw_root: data/synthsod
-output_root: data_processed
+output_root: data_processed_synthsod
 target_sample_rate: 44100
 close_mic_glob: "Close Mic/*.flac"
 tree_mic_glob: "Tree/*.flac"

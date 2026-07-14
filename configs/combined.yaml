@@ -1,0 +1,28 @@
+# Training on multiple datasets at once. Point both prep scripts'
+# output_root at data_processed_all first (song folder names don't
+# collide), then train with this config. The anchor patterns are the
+# union of both datasets' conventions: Spheres main/room mics and the
+# SynthSOD tree channels (Tree_L/Tree_R also match *_L/*_R with the
+# same angles; they're listed for clarity).
+data_processed_root: data_processed_all
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 1000
+val_clips: 200
+val_fraction: 0.1
+split_seed: 0
+batch_size: 16
+lr: 0.0003
+num_epochs: 200
+checkpoint_dir: checkpoints_combined
+log_dir: runs/combined
+device: auto
+checkpoint_every: 5
+anchors:
+  "*_L": 0
+  "*_C": 45
+  "*_R": 90
+  "*_RoomL": 0
+  "*_RoomR": 90
+  "Tree_L": 0
+  "Tree_R": 90

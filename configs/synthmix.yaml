@@ -1,0 +1,21 @@
+# Training on the synthetic-mix corpus (generate_synthmix.py output).
+# The target here is exactly representable by the model class and each
+# song's true gains/pans are in its mix_params.yaml, so recovery error
+# is directly measurable via scripts/dump_gain_pan.py.
+data_processed_root: data_processed_synthmix
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 1000
+val_clips: 200
+val_fraction: 0.1
+split_seed: 0
+batch_size: 16
+lr: 0.0003
+num_epochs: 40
+checkpoint_dir: checkpoints_synthmix
+log_dir: runs/synthmix
+device: auto
+checkpoint_every: 5
+anchors:
+  "Tree_L": 0
+  "Tree_R": 90

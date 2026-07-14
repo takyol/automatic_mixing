@@ -1,5 +1,5 @@
 # Training on the prepped SynthSOD data only (bleed-free close mics,
-# stereo tree-sum target). Kept separate from default.yaml so Spheres
+# stereo tree-sum target). Kept separate from spheres.yaml so Spheres
 # and SynthSOD runs don't share data, checkpoints, or logs.
 data_processed_root: data_processed_synthsod
 sample_rate: 44100

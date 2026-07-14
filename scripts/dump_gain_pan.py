@@ -4,7 +4,7 @@ each stem in a folder. The key diagnostic is the *spread* of theta: if
 every track gets nearly the same angle, the model is not differentiating
 tracks and the mix will collapse toward one side of the stereo field.
 
-Usage: python scripts/dump_gain_pan.py --stems-dir data_processed/song_1/stems --checkpoint checkpoints/best.pt [--config configs/default.yaml] [--offset-seconds 60] [--clip-seconds 5]
+Usage: python scripts/dump_gain_pan.py --stems-dir data_processed/song_1/stems --checkpoint checkpoints_spheres/best.pt [--config configs/spheres.yaml] [--offset-seconds 60] [--clip-seconds 5]
 
 Pass the training config via --config to mark anchored (fixed-pan)
 tracks and report the spread over the learned pans only.

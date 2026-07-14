@@ -2,7 +2,7 @@
 """CLI: renders a stereo mix from a folder of stem WAV files using a
 trained checkpoint.
 
-Usage: python scripts/infer.py --stems-dir path/to/stems --checkpoint checkpoints/best.pt --output mix.wav [--config configs/default.yaml]
+Usage: python scripts/infer.py --stems-dir path/to/stems --checkpoint checkpoints_spheres/best.pt --output mix.wav [--config configs/spheres.yaml]
 
 Pass the training config via --config so the same anchor patterns
 (fixed-pan tracks) used in training are applied at inference.

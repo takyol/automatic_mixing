@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """CLI: trains the automixer MLP.
 
-Usage: python scripts/train.py --config configs/default.yaml
+Usage: python scripts/train.py --config configs/spheres.yaml
 """
 import argparse
 from pathlib import Path
