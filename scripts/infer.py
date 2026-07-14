@@ -6,22 +6,21 @@ Usage: python scripts/infer.py --stems-dir path/to/stems --checkpoint checkpoint
 """
 import argparse
 from pathlib import Path
-import torch
+
 from automix.audio_io import save_wav
+from automix.device import resolve_device
 from automix.inference import render_mix
 
 
 def main():
-    default_device = "cuda" if torch.cuda.is_available() else "cpu"
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--stems-dir", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--device", default=default_device)
+    parser.add_argument("--device", default="auto")
     args = parser.parse_args()
 
-    mix, sample_rate = render_mix(args.stems_dir, args.checkpoint, device=args.device)
+    mix, sample_rate = render_mix(args.stems_dir, args.checkpoint, device=resolve_device(args.device))
     save_wav(args.output, mix, sample_rate)
 
 
