@@ -1,9 +1,9 @@
-# SynthSOD directory layout: these are placeholder example
-# values, not verified against the actual dataset.
+# Layout verified against the real SynthSOD release: per song,
+# "Close Mic/<Instrument>.flac" (mono, bleed-free) and
+# "Tree/<Instrument>.flac" (stereo main-array render per instrument,
+# summed together to form the stereo target mixture).
 raw_root: data/synthsod
 output_root: data_processed
 target_sample_rate: 44100
-close_mic_glob: "CloseMic/*.wav"
-tree_mic_files:
-  - "Tree/L.wav"
-  - "Tree/R.wav"
+close_mic_glob: "Close Mic/*.flac"
+tree_mic_glob: "Tree/*.flac"
