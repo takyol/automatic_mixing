@@ -1,6 +1,7 @@
 # Training config for Kaggle GPU sessions (see KAGGLE.md).
-# Fixed run_name so checkpoints land at a predictable path and sessions
-# can resume each other: /kaggle/working/checkpoints/kaggle/last.pt
+# Runs get the standard <date>_<time>_kaggle name; the notebook's resume
+# cell finds the most recent run's checkpoint, so sessions still continue
+# each other without a fixed path.
 data_processed_root: /kaggle/working/data_processed
 sample_rate: 44100
 clip_seconds: 5.0
@@ -16,4 +17,3 @@ log_dir: /kaggle/working/runs
 device: auto
 checkpoint_every: 5
 num_workers: 4
-run_name: kaggle
