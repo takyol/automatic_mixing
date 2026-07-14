@@ -1,0 +1,19 @@
+# Training config for Kaggle GPU sessions (see KAGGLE.md).
+# Fixed run_name so checkpoints land at a predictable path and sessions
+# can resume each other: /kaggle/working/checkpoints/kaggle/last.pt
+data_processed_root: /kaggle/working/data_processed
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 1000
+val_clips: 200
+val_fraction: 0.1
+split_seed: 0
+batch_size: 16
+lr: 0.0003
+num_epochs: 200
+checkpoint_dir: /kaggle/working/checkpoints
+log_dir: /kaggle/working/runs
+device: auto
+checkpoint_every: 5
+num_workers: 4
+run_name: kaggle

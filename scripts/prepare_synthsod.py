@@ -22,7 +22,7 @@ def main():
         output_root=Path(config["output_root"]),
         target_sample_rate=config["target_sample_rate"],
         close_mic_glob=config["close_mic_glob"],
-        tree_mic_files=config["tree_mic_files"],
+        tree_mic_glob=config["tree_mic_glob"],
     )
 
 

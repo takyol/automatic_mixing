@@ -20,6 +20,8 @@ from automix.train_loop import train
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--resume", type=Path, default=None,
+                        help="checkpoint (last.pt) to continue training from")
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -45,8 +47,12 @@ def main():
 
     # Each run gets its own folder under the configured roots:
     # <timestamp>_<config name>, overridable via a run_name config key.
-    run_name = config.get("run_name") or (
-        f"{datetime.now():%Y-%m-%d_%H%M}_{args.config.stem}")
+    # Resuming continues in the resumed checkpoint's run folder.
+    if args.resume is not None:
+        run_name = args.resume.parent.name
+    else:
+        run_name = config.get("run_name") or (
+            f"{datetime.now():%Y-%m-%d_%H%M}_{args.config.stem}")
     checkpoint_dir = Path(config["checkpoint_dir"]) / run_name
     log_dir = Path(config["log_dir"]) / run_name
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -63,6 +69,7 @@ def main():
         device=device,
         checkpoint_every=config.get("checkpoint_every", 1),
         num_workers=config.get("num_workers", 0),
+        resume_from=args.resume,
     )
 
 

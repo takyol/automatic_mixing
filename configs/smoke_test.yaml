@@ -8,8 +8,8 @@ split_seed: 0
 batch_size: 4
 lr: 0.0003
 num_epochs: 2
-checkpoint_dir: checkpoints
-log_dir: runs
+checkpoint_dir: checkpoints_smoke
+log_dir: runs_smoke
 device: auto
 checkpoint_every: 1
 # Parallel data-loading workers. Keep 0 on macOS/MPS (deadlocks observed);

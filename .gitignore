@@ -4,6 +4,7 @@ data_processed/
 checkpoints/
 checkpoints_smoke/
 runs/
+runs_smoke/
 
 # Python virtual environment
 venv/

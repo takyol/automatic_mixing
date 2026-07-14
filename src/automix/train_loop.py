@@ -38,7 +38,7 @@ def run_epoch(model, loader, loss_fn, optimizer=None, device="cpu"):
 
 def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
           lr: float, checkpoint_dir: Path, log_dir: Path, device: str = "cpu",
-          checkpoint_every: int = 1, num_workers: int = 0):
+          checkpoint_every: int = 1, num_workers: int = 0, resume_from=None):
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir=str(log_dir))
@@ -49,6 +49,17 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=20)
     loss_fn = MultiResolutionSTFTLoss().to(device)
 
+    start_epoch = 0
+    best_val_loss = float("inf")
+    if resume_from is not None:
+        checkpoint = torch.load(resume_from, map_location=device)
+        model.mlp.load_state_dict(checkpoint["mlp_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        start_epoch = checkpoint["epoch"] + 1
+        best_val_loss = checkpoint.get("best_val_loss", checkpoint["val_loss"])
+        print(f"Resumed from {resume_from} (continuing at epoch {start_epoch + 1})")
+
     # Workers must not be persistent: resample() redraws the clip set in the
     # main process each epoch, and only freshly spawned workers pick that up.
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
@@ -58,8 +69,7 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
                              collate_fn=collate_variable_tracks,
                              num_workers=num_workers)
 
-    best_val_loss = float("inf")
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         train_dataset.resample()
         train_loss = run_epoch(model, train_loader, loss_fn, optimizer=optimizer, device=device)
         val_loss = run_epoch(model, val_loader, loss_fn, optimizer=None, device=device)
@@ -71,18 +81,19 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
         writer.add_scalar("lr", current_lr, epoch)
         print(f"epoch {epoch + 1}/{num_epochs}  train_loss={train_loss:.4f}  val_loss={val_loss:.4f}  lr={current_lr:.2e}")
 
+        best_val_loss = min(best_val_loss, val_loss)
         checkpoint = {
             "epoch": epoch,
             "mlp_state_dict": model.mlp.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
             "val_loss": val_loss,
+            "best_val_loss": best_val_loss,
         }
         is_checkpoint_epoch = (epoch + 1) % checkpoint_every == 0 or epoch == num_epochs - 1
         if is_checkpoint_epoch:
             torch.save(checkpoint, checkpoint_dir / "last.pt")
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        if val_loss == best_val_loss:
             torch.save(checkpoint, checkpoint_dir / "best.pt")
 
     writer.close()

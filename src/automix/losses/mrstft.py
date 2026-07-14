@@ -9,6 +9,11 @@ class MultiResolutionSTFTLoss(nn.Module):
     Computed on left+right sum and left-right difference signals, at
     multiple STFT resolutions, combining spectral convergence and
     log-magnitude terms.
+
+    Additionally computed per channel (left vs left, right vs right):
+    the sum/diff terms alone are invariant to mirroring the stereo
+    image, so they cannot penalize a mix whose energy sits on the wrong
+    side. The per-channel terms break that symmetry.
     """
 
     def __init__(self, fft_sizes=(512, 1024, 2048), eps: float = 1e-8):
@@ -47,4 +52,8 @@ class MultiResolutionSTFTLoss(nn.Module):
         target_sum = target[:, 0, :] + target[:, 1, :]
         target_diff = target[:, 0, :] - target[:, 1, :]
 
-        return self._signal_loss(pred_sum, target_sum) + self._signal_loss(pred_diff, target_diff)
+        sum_diff_loss = (self._signal_loss(pred_sum, target_sum)
+                         + self._signal_loss(pred_diff, target_diff))
+        per_channel_loss = (self._signal_loss(pred[:, 0, :], target[:, 0, :])
+                            + self._signal_loss(pred[:, 1, :], target[:, 1, :]))
+        return sum_diff_loss + per_channel_loss
