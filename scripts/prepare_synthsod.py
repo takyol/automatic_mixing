@@ -5,7 +5,9 @@ Usage: python scripts/prepare_synthsod.py --config configs/synthsod_prep.yaml
 """
 import argparse
 from pathlib import Path
+
 import yaml
+
 from automix.prep.synthsod import prepare_synthsod
 
 
@@ -22,7 +24,7 @@ def main():
         output_root=Path(config["output_root"]),
         target_sample_rate=config["target_sample_rate"],
         close_mic_glob=config["close_mic_glob"],
-        tree_mic_files=config["tree_mic_files"],
+        tree_mic_glob=config["tree_mic_glob"],
     )
 
 
