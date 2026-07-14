@@ -1,0 +1,25 @@
+# Training on the prepped SynthSOD data only (bleed-free close mics,
+# stereo tree-sum target). Kept separate from default.yaml so Spheres
+# and SynthSOD runs don't share data, checkpoints, or logs.
+data_processed_root: data_processed_synthsod
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 1000
+val_clips: 200
+val_fraction: 0.1
+split_seed: 0
+batch_size: 16
+lr: 0.0003
+num_epochs: 40
+checkpoint_dir: checkpoints_synthsod
+log_dir: runs/synthsod
+device: auto
+checkpoint_every: 5
+# Fixed-pan anchors: the prep writes the tree sum's channels as
+# Tree_L/Tree_R stems. NOTE: since the SynthSOD target IS the tree sum,
+# anchors fully explain it -- expect anchor gains -> 1 and close-mic
+# gains -> 0. This run is a positive control for the anchor mechanism
+# (success = no one-sided collapse), not a test of spot placement.
+anchors:
+  "Tree_L": 0
+  "Tree_R": 90

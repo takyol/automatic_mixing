@@ -12,3 +12,13 @@ checkpoint_dir: checkpoints
 log_dir: runs/default
 device: auto
 checkpoint_every: 5
+# Fixed-pan anchor tracks: stems matching these filename globs keep a
+# learned gain but are pinned to the given pan (degrees, 0=L 45=C 90=R).
+# Spheres main array (L/C/R) and room pair carry the target's spaced-mic
+# stereo width, which panned mono spots cannot produce on their own.
+anchors:
+  "*_L": 0
+  "*_C": 45
+  "*_R": 90
+  "*_RoomL": 0
+  "*_RoomR": 90

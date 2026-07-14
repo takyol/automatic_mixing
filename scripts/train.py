@@ -28,14 +28,17 @@ def main():
         entries, val_fraction=config["val_fraction"], seed=config["split_seed"])
 
     sample_rate = config["sample_rate"]
+    anchor_patterns = config.get("anchors")
     train_dataset = MixDataset(train_entries, sample_rate=sample_rate,
                                 clip_seconds=config["clip_seconds"],
                                 clips_per_epoch=config["clips_per_epoch"],
-                                seed=config["split_seed"])
+                                seed=config["split_seed"],
+                                anchor_patterns=anchor_patterns)
     val_dataset = MixDataset(val_entries, sample_rate=sample_rate,
                               clip_seconds=config["clip_seconds"],
                               clips_per_epoch=config["val_clips"],
-                              seed=config["split_seed"] + 1)
+                              seed=config["split_seed"] + 1,
+                              anchor_patterns=anchor_patterns)
 
     model = AutomixModel(native_sample_rate=sample_rate)
 

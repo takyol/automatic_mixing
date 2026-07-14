@@ -1,7 +1,9 @@
 from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+
 from automix.data.collate import collate_variable_tracks
 from automix.losses.mrstft import MultiResolutionSTFTLoss
 
@@ -14,20 +16,21 @@ def run_epoch(model, loader, loss_fn, optimizer=None, device="cpu"):
 
     total_loss = 0.0
     num_batches = 0
-    for stems, mask, target in loader:
+    for stems, mask, anchor_theta, target in loader:
         stems = stems.to(device)
         mask = mask.to(device)
+        anchor_theta = anchor_theta.to(device)
         target = target.to(device)
 
         if is_train:
             optimizer.zero_grad()
-            pred = model(stems, mask)
+            pred = model(stems, mask, anchor_theta=anchor_theta)
             loss = loss_fn(pred, target)
             loss.backward()
             optimizer.step()
         else:
             with torch.no_grad():
-                pred = model(stems, mask)
+                pred = model(stems, mask, anchor_theta=anchor_theta)
                 loss = loss_fn(pred, target)
 
         total_loss += loss.item()
