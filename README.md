@@ -66,3 +66,11 @@ Once you have a trained checkpoint, you can mix a folder of stems:
 ```
 python scripts/infer.py --stems-dir path/to/stems --checkpoint checkpoints/best.pt --output mix.wav
 ```
+
+To see the gain and pan the model chose per stem, rendered like a mixing
+console (requires the dev extras for matplotlib):
+
+```
+python scripts/plot_console.py --stems-dir path/to/stems \
+    --checkpoint checkpoints/<run>/best.pt --output reports/console.png
+```

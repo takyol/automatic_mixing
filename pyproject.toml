@@ -18,7 +18,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = [
+    "pytest>=7.0",
+    # for scripts/plot_console.py and report figures
+    "matplotlib>=3.8",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
