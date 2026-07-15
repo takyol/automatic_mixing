@@ -60,8 +60,9 @@ def main():
     model.mlp.load_state_dict(checkpoint["mlp_state_dict"])
     model.eval()
 
-    print(f"checkpoint: {args.checkpoint} (epoch {checkpoint.get('epoch')}, "
-          f"val_loss {checkpoint.get('val_loss'):.4f})")
+    losses = ", ".join(f"{key} {checkpoint[key]:.4f}" for key in ("val_loss", "train_loss")
+                       if checkpoint.get(key) is not None)
+    print(f"checkpoint: {args.checkpoint} (epoch {checkpoint.get('epoch')}, {losses})")
     print(f"clip: {args.clip_seconds}s at offset {args.offset_seconds}s\n")
 
     with torch.no_grad():
@@ -73,10 +74,12 @@ def main():
     anchors = anchor_thetas_for(stem_paths, anchor_patterns)
 
     learned = []
+    learned_gains = []
     for path, (gain, theta), anchor in zip(stem_paths, gain_theta, anchors):
         if torch.isnan(anchor):
             degrees = math.degrees(theta.item())
             learned.append(degrees)
+            learned_gains.append(gain.item())
             note = ""
         else:
             degrees = math.degrees(anchor.item())
@@ -85,8 +88,12 @@ def main():
 
     if learned:
         learned = torch.tensor(learned)
+        gains = torch.tensor(learned_gains)
+        weighted_mean = (learned * gains).sum() / gains.sum()
         print(f"\nlearned-pan spread: min={learned.min():.1f} max={learned.max():.1f} "
               f"std={learned.std():.2f} deg")
+        print(f"learned-pan mean: {learned.mean():.1f} deg, gain-weighted mean: "
+              f"{weighted_mean:.1f} deg  (45 = balanced around center)")
 
 
 if __name__ == "__main__":

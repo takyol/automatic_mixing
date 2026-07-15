@@ -58,6 +58,7 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
                              collate_fn=collate_variable_tracks)
 
     best_val_loss = float("inf")
+    best_train_loss = float("inf")
     for epoch in range(num_epochs):
         train_dataset.resample()
         train_loss = run_epoch(model, train_loader, loss_fn, optimizer=optimizer, device=device)
@@ -76,6 +77,7 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
             "val_loss": val_loss,
+            "train_loss": train_loss,
         }
         is_checkpoint_epoch = (epoch + 1) % checkpoint_every == 0 or epoch == num_epochs - 1
         if is_checkpoint_epoch:
@@ -83,5 +85,8 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             torch.save(checkpoint, checkpoint_dir / "best.pt")
+        if train_loss < best_train_loss:
+            best_train_loss = train_loss
+            torch.save(checkpoint, checkpoint_dir / "best_train.pt")
 
     writer.close()
