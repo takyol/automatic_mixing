@@ -1,6 +1,9 @@
 import random
+
 import torch
 from torch.utils.data import Dataset
+
+from automix.anchors import anchor_thetas_for
 from automix.audio_io import load_wav
 
 
@@ -21,13 +24,15 @@ class MixDataset(Dataset):
     """
 
     def __init__(self, entries: list, sample_rate: int, clip_seconds: float = 5.0,
-                 clips_per_epoch: int = 1000, seed: int = None):
+                 clips_per_epoch: int = 1000, seed: int = None, anchor_patterns: dict = None):
         self.clip_frames = int(clip_seconds * sample_rate)
         self.entries = [e for e in entries if e.num_frames >= self.clip_frames]
         if not self.entries:
             raise ValueError("No songs long enough for the requested clip length")
         self.sample_rate = sample_rate
         self.clips_per_epoch = clips_per_epoch
+        self._anchors = {e.song_id: anchor_thetas_for(e.stem_paths, anchor_patterns)
+                         for e in self.entries}
         self._rng = random.Random(seed)
         self._draws = []
         self.resample()
@@ -54,4 +59,4 @@ class MixDataset(Dataset):
 
         target, _ = load_wav(entry.target_path, frame_offset=start, num_frames=self.clip_frames)
 
-        return stems_tensor, target
+        return stems_tensor, self._anchors[entry.song_id], target

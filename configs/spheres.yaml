@@ -1,0 +1,27 @@
+data_processed_root: data_processed
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 1000
+val_clips: 200
+val_fraction: 0.1
+split_seed: 0
+batch_size: 16
+lr: 0.0003
+num_epochs: 200
+checkpoint_dir: checkpoints_spheres
+log_dir: runs/spheres
+device: auto
+checkpoint_every: 5
+# Fixed-pan anchor tracks: stems matching these filename globs keep a
+# learned gain but are pinned to the given pan (degrees, 0=L 45=C 90=R).
+# Spheres main array (L/C/R) and room pair carry the target's spaced-mic
+# stereo width, which panned mono spots cannot produce on their own.
+anchors:
+  "*_L": 0
+  "*_C": 45
+  "*_R": 90
+  "*_RoomL": 0
+  "*_RoomR": 90
+# Parallel data-loading workers. Keep 0 on macOS/MPS (deadlocks observed);
+# raise to e.g. 4 on Linux/CUDA machines.
+num_workers: 0

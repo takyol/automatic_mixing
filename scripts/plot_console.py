@@ -5,7 +5,10 @@ indicator on top, gain fader below).
 
 Usage: python scripts/plot_console.py --stems-dir data_processed/<song>/stems \
            --checkpoint checkpoints/<run>/best.pt --output reports/console.png \
-           [--title "Song name"]
+           [--title "Song name"] [--config configs/spheres.yaml]
+
+Pass the training config via --config so anchored stems are drawn at
+their pinned pan positions instead of the (unused) learned angle.
 
 Requires matplotlib (not a core dependency: pip install matplotlib).
 """
@@ -19,7 +22,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 import torch
 import torch.nn.functional as F
+import yaml
 
+from automix.anchors import anchor_thetas_for
 from automix.audio_io import load_wav
 from automix.device import resolve_device
 from automix.model.automix_model import AutomixModel
@@ -30,9 +35,11 @@ BLUE = "#2a78d6"
 INK, MUTED, GRID, BASE, SURF = "#0b0b0b", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb"
 
 
-def model_params(stems_dir: Path, checkpoint_path: Path, device: str):
+def model_params(stems_dir: Path, checkpoint_path: Path, device: str,
+                 anchor_patterns: dict = None):
     """Returns (stem names, linear gains, pan angles theta) the checkpoint
-    assigns to the stems. Mirrors inference.render_mix's loading."""
+    assigns to the stems, with anchored stems pinned to their fixed pans.
+    Mirrors inference.render_mix's loading."""
     stem_paths = sorted(Path(stems_dir).glob("*.wav"))
     if not stem_paths:
         raise ValueError(f"No .wav files found in {stems_dir}")
@@ -58,8 +65,12 @@ def model_params(stems_dir: Path, checkpoint_path: Path, device: str):
         ctx = ctx.unsqueeze(1).expand(-1, emb.shape[1], -1)
         gain_theta = model.mlp(emb, ctx)[0].cpu()  # (N, 2)
 
+    theta = gain_theta[:, 1]
+    anchor_theta = anchor_thetas_for(stem_paths, anchor_patterns)
+    theta = torch.where(torch.isnan(anchor_theta), theta, anchor_theta)
+
     names = [p.stem for p in stem_paths]
-    return names, gain_theta[:, 0].tolist(), gain_theta[:, 1].tolist()
+    return names, gain_theta[:, 0].tolist(), theta.tolist()
 
 
 def draw_console(names, gains, thetas, title, out_path):
@@ -137,10 +148,18 @@ def main():
     parser.add_argument("--title", default=None,
                         help="figure title (default: derived from paths)")
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--config", type=Path, default=None,
+                        help="training config; its `anchors` patterns are applied to the drawn pans")
     args = parser.parse_args()
 
+    anchor_patterns = None
+    if args.config is not None:
+        with open(args.config) as f:
+            anchor_patterns = yaml.safe_load(f).get("anchors")
+
     device = resolve_device(args.device)
-    names, gains, thetas = model_params(args.stems_dir, args.checkpoint, device)
+    names, gains, thetas = model_params(args.stems_dir, args.checkpoint, device,
+                                        anchor_patterns=anchor_patterns)
 
     for nm, g, t in zip(names, gains, thetas):
         pan = (t / (math.pi / 2)) * 2 - 1

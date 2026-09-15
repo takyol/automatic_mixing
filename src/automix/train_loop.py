@@ -1,7 +1,9 @@
 from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+
 from automix.data.collate import collate_variable_tracks
 from automix.losses.mrstft import MultiResolutionSTFTLoss
 
@@ -14,20 +16,21 @@ def run_epoch(model, loader, loss_fn, optimizer=None, device="cpu"):
 
     total_loss = 0.0
     num_batches = 0
-    for stems, mask, target in loader:
+    for stems, mask, anchor_theta, target in loader:
         stems = stems.to(device)
         mask = mask.to(device)
+        anchor_theta = anchor_theta.to(device)
         target = target.to(device)
 
         if is_train:
             optimizer.zero_grad()
-            pred = model(stems, mask)
+            pred = model(stems, mask, anchor_theta=anchor_theta)
             loss = loss_fn(pred, target)
             loss.backward()
             optimizer.step()
         else:
             with torch.no_grad():
-                pred = model(stems, mask)
+                pred = model(stems, mask, anchor_theta=anchor_theta)
                 loss = loss_fn(pred, target)
 
         total_loss += loss.item()
@@ -51,6 +54,7 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
 
     start_epoch = 0
     best_val_loss = float("inf")
+    best_train_loss = float("inf")
     if resume_from is not None:
         checkpoint = torch.load(resume_from, map_location=device)
         model.mlp.load_state_dict(checkpoint["mlp_state_dict"])
@@ -58,6 +62,7 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
         start_epoch = checkpoint["epoch"] + 1
         best_val_loss = checkpoint.get("best_val_loss", checkpoint["val_loss"])
+        best_train_loss = checkpoint.get("best_train_loss", float("inf"))
         print(f"Resumed from {resume_from} (continuing at epoch {start_epoch + 1})")
 
     # Workers must not be persistent: resample() redraws the clip set in the
@@ -89,11 +94,16 @@ def train(model, train_dataset, val_dataset, num_epochs: int, batch_size: int,
             "scheduler_state_dict": scheduler.state_dict(),
             "val_loss": val_loss,
             "best_val_loss": best_val_loss,
+            "train_loss": train_loss,
+            "best_train_loss": min(best_train_loss, train_loss),
         }
         is_checkpoint_epoch = (epoch + 1) % checkpoint_every == 0 or epoch == num_epochs - 1
         if is_checkpoint_epoch:
             torch.save(checkpoint, checkpoint_dir / "last.pt")
         if val_loss == best_val_loss:
             torch.save(checkpoint, checkpoint_dir / "best.pt")
+        if train_loss < best_train_loss:
+            best_train_loss = train_loss
+            torch.save(checkpoint, checkpoint_dir / "best_train.pt")
 
     writer.close()

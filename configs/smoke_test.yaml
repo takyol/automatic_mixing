@@ -15,3 +15,13 @@ checkpoint_every: 1
 # Parallel data-loading workers. Keep 0 on macOS/MPS (deadlocks observed);
 # raise to e.g. 4 on Linux/CUDA machines.
 num_workers: 0
+# Anchor the main-array/room/tree stems (union of both datasets' naming
+# conventions) so the smoke test exercises the anchor path too.
+anchors:
+  "*_L": 0
+  "*_C": 45
+  "*_R": 90
+  "*_RoomL": 0
+  "*_RoomR": 90
+  "Tree_L": 0
+  "Tree_R": 90

@@ -1,0 +1,33 @@
+# Synthetic ground-truth mix generation from prepped SynthSOD.
+# Pans follow a fixed orchestral seating chart (audience view: violins
+# left, low strings right, winds center, brass center-right) so the
+# content -> position mapping is learnable; only gains and a small pan
+# jitter are randomized. Sampled values are saved per song for
+# evaluating how well training recovers them.
+input_root: data_processed_synthsod
+output_root: data_processed_synthmix
+seed: 0
+anchor_gain_range: [0.6, 1.0]
+spot_gain_db_range: [-6.0, 0.0]
+pan_jitter_degrees: 5.0
+anchors:
+  "Tree_L": 0
+  "Tree_R": 90
+seating:
+  "Violin_1": 15
+  "Violin_2": 30
+  "Viola": 55
+  "Cello": 70
+  "Bass": 80
+  "Harp": 20
+  "Piccolo": 38
+  "Flute": 40
+  "Clarinet": 42
+  "Oboe": 50
+  "Bassoon": 52
+  "Horn": 30
+  "Trumpet": 60
+  "Trombone": 65
+  "Tuba": 70
+  "Timpani": 35
+  "untunedpercussion": 50

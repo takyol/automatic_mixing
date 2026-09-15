@@ -5,7 +5,9 @@ Usage: python scripts/prepare_synthsod.py --config configs/synthsod_prep.yaml
 """
 import argparse
 from pathlib import Path
+
 import yaml
+
 from automix.prep.synthsod import prepare_synthsod
 
 

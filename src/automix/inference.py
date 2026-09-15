@@ -1,17 +1,25 @@
 from pathlib import Path
+
 import torch
 import torch.nn.functional as F
+
+from automix.anchors import anchor_thetas_for
 from automix.audio_io import load_wav
 from automix.model.automix_model import AutomixModel
 
 
-def render_mix(stems_dir: Path, checkpoint_path: Path, vggish_backbone=None, device: str = "cpu"):
+def render_mix(stems_dir: Path, checkpoint_path: Path, vggish_backbone=None,
+               device: str = "cpu", anchor_patterns: dict = None):
     """Renders a stereo mix for a folder of stem WAV files using a
     trained checkpoint. Returns (mix: Tensor(2, T), sample_rate: int).
 
     All stems must share the same sample rate; they're padded to the
     length of the longest stem (real-world stem lengths in a single
     take can differ by a handful of samples at the tail).
+
+    `anchor_patterns` ({filename glob -> pan angle in degrees}) pins
+    matching stems to fixed pans, and must match what the checkpoint
+    was trained with.
     """
     stems_dir = Path(stems_dir)
     stem_paths = sorted(stems_dir.glob("*.wav"))
@@ -32,6 +40,7 @@ def render_mix(stems_dir: Path, checkpoint_path: Path, vggish_backbone=None, dev
     padded = [F.pad(w, (0, max_len - w.shape[0])) for w in waveforms]
     stems = torch.stack(padded, dim=0).unsqueeze(0).to(device)  # (1, N, T)
     mask = torch.ones(1, len(padded), dtype=torch.bool, device=device)
+    anchor_theta = anchor_thetas_for(stem_paths, anchor_patterns).unsqueeze(0).to(device)
 
     model = AutomixModel(native_sample_rate=sample_rate, vggish_backbone=vggish_backbone).to(device)
     checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -39,6 +48,6 @@ def render_mix(stems_dir: Path, checkpoint_path: Path, vggish_backbone=None, dev
     model.eval()
 
     with torch.no_grad():
-        mix = model(stems, mask)[0]  # (2, T)
+        mix = model(stems, mask, anchor_theta=anchor_theta)[0]  # (2, T)
 
     return mix.cpu(), sample_rate

@@ -11,13 +11,18 @@ class VGGishEncoder(nn.Module):
 
     Uses torchaudio's native, pure-PyTorch VGGish port.
     All B*N tracks in a batch are framed into fixed-size examples and
-    run through the backbone in a single forward call, then the
-    per-track frame embeddings are split back out and time-averaged.
+    run through the backbone batched together, then the per-track frame
+    embeddings are split back out and time-averaged. Backbone calls are
+    capped at `max_examples_per_batch` examples: a full-length song at
+    inference time frames into hundreds of examples per track, and
+    pushing them through the CNN in one call runs GPUs out of memory.
     """
 
     def __init__(self, native_sample_rate: int, backbone: nn.Module = None,
-                 input_processor=None, resampler: nn.Module = None):
+                 input_processor=None, resampler: nn.Module = None,
+                 max_examples_per_batch: int = 512):
         super().__init__()
+        self.max_examples_per_batch = max_examples_per_batch
         if backbone is None:
             backbone = VGGISH.get_model()
         self.backbone = backbone
@@ -50,7 +55,8 @@ class VGGishEncoder(nn.Module):
         counts = [examples.shape[0] for examples in examples_per_track]
 
         all_examples = torch.cat(examples_per_track, dim=0)
-        all_embeddings = self.backbone(all_examples)  # one batched forward call for every track
+        chunks = torch.split(all_examples, self.max_examples_per_batch)
+        all_embeddings = torch.cat([self.backbone(chunk) for chunk in chunks], dim=0)
 
         embeddings = [frame_embeddings.mean(dim=0)
                       for frame_embeddings in torch.split(all_embeddings, counts)]
