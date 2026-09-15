@@ -2,6 +2,11 @@
 # Runs get the standard <date>_<time>_kaggle name; the notebook's resume
 # cell finds the most recent run's checkpoint, so sessions still continue
 # each other without a fixed path.
+#
+# Corpus (built by the notebook's prep cell): Spheres (real mixes) +
+# Synthmix (synthetic targets with known gain/pan). num_epochs is the
+# TOTAL target; the notebook caps epochs per session to stay under
+# Kaggle's 12h batch limit and resumes across sessions.
 data_processed_root: /kaggle/working/data_processed
 sample_rate: 44100
 clip_seconds: 5.0
@@ -11,9 +16,19 @@ val_fraction: 0.1
 split_seed: 0
 batch_size: 16
 lr: 0.0003
-num_epochs: 60
+num_epochs: 200
 checkpoint_dir: /kaggle/working/checkpoints
 log_dir: /kaggle/working/runs
 device: auto
 checkpoint_every: 5
 num_workers: 4
+# Fixed-pan anchor tracks (union of both datasets' naming conventions):
+# Spheres main array + room pair, and the SynthSOD/Synthmix tree channels.
+anchors:
+  "*_L": 0
+  "*_C": 45
+  "*_R": 90
+  "*_RoomL": 0
+  "*_RoomR": 90
+  "Tree_L": 0
+  "Tree_R": 90

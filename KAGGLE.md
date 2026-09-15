@@ -22,14 +22,21 @@ times faster than on an M1 Pro, and `num_workers` works there (Linux).
 
 ## Each training session
 
-- Run all cells. Cell 3 starts training and **auto-resumes** from
-  `/kaggle/working/checkpoints/kaggle/last.pt` when one exists.
+- Run all cells. The prep cell builds the final-run corpus (Spheres +
+  Synthmix — see the README on why raw SynthSOD is only an intermediate),
+  and cell 3 starts training, **auto-resuming** from the most recent
+  run's `last.pt` when one exists in `/kaggle/working`.
 - For long runs use **Save Version -> Save & Run All (Commit)**: the notebook
-  runs headless for up to 12 hours, no browser needed. Checkpoints and
-  TensorBoard logs appear on the notebook's **Output** tab afterwards.
+  runs headless, no browser needed. Checkpoints and TensorBoard logs appear
+  on the notebook's **Output** tab afterwards.
+- **Batch sessions are killed at 12h and their output is discarded**, so
+  cell 3 caps epochs per session (`EPOCHS_THIS_SESSION`, default 120). For
+  the full 200-epoch run: session 1 with the default, then session 2 with
+  the saved version's Output attached as an input, `PREV_OUTPUT` set to it,
+  and `EPOCHS_THIS_SESSION = 200` — it resumes and trains the rest.
 - Download `best.pt` from the Output tab to render mixes locally
-  (`scripts/infer.py`), and the `runs/` folder to view curves in a local
-  TensorBoard.
+  (`scripts/infer.py --config configs/kaggle.yaml` so the anchors match),
+  and the `runs/` folder to view curves in a local TensorBoard.
 
 ## Notes
 
