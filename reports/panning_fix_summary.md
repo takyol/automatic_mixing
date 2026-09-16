@@ -40,8 +40,12 @@ added checkpoint resume (`--resume`) so long runs survive session limits.
 ## Status
 
 Clear win — same data and model, only the loss changed, and the collapse is gone.
-This was a 60-epoch quick check (`kaggle` run, best val 5.18 @ epoch 59). Next:
-run the full 200 epochs, and investigate why the bigger orchestra still has a
-residual left bias (more training may help, or the pan parameterization needs a
-look). Loss curves (`reports/kaggle_training_curves.png`) and the full run history
+This was a 60-epoch quick check (`kaggle` run, best val 5.18 @ epoch 59). Loss
+curves (`reports/kaggle_training_curves.png`) and the full run history
 (`reports/experiment_log.md`) are in the repo.
+
+**Follow-up (done):** the full 200-epoch run on 68 songs confirmed the fix and
+put a number on it — the model places spot mics within **5.8°** of their true
+position on held-out songs, versus 22.4° for this 60-epoch checkpoint, which
+turns out to have been worse than guessing center. See
+`reports/final_run_evaluation.md`.
