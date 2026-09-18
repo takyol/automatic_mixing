@@ -104,6 +104,11 @@ def draw_console(names, gains, thetas, title, out_path):
     ax.text(-1.05, (FAD_TOP + FAD_BOT) / 2, "gain (dB)", ha="center", va="center",
             color=MUTED, fontsize=8.5, rotation=90)
 
+    # strip a song prefix shared by every stem ("Mozart1_Vl1" -> "Vl1") when
+    # space is tight, but keep names like "Violin_1" whole
+    heads = {name.split("_", 1)[0] for name in names}
+    prefix = heads.pop() + "_" if len(heads) == 1 and all("_" in nm for nm in names) else ""
+
     for i, (name, db, pan) in enumerate(zip(names, gains_db, pans)):
         if i:
             ax.plot([i - 0.5, i - 0.5], [0.04, 0.985], color=GRID, lw=0.6, zorder=1)
@@ -131,7 +136,7 @@ def draw_console(names, gains, thetas, title, out_path):
         ax.plot([i - 0.09, i + 0.09], [y, y], color=SURF, lw=0.9, zorder=5)
 
         ax.text(i, DB_Y, f"{db:+.1f}", ha="center", va="center", color=INK, fontsize=8.5)
-        label = name.split("_", 1)[-1] if "_" in name and n > 8 else name
+        label = name[len(prefix):] if n > 8 else name
         ax.text(i, NAME_Y, label, ha="center", va="center", color=MUTED, fontsize=8,
                 rotation=0 if len(label) <= 9 else 30)
 
