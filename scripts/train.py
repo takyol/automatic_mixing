@@ -37,7 +37,9 @@ def main():
                                 clip_seconds=config["clip_seconds"],
                                 clips_per_epoch=config["clips_per_epoch"],
                                 seed=config["split_seed"],
-                                anchor_patterns=anchor_patterns)
+                                anchor_patterns=anchor_patterns,
+                                sampling_fractions=config.get("sampling_fractions"),
+                                augment=config.get("augment"))
     val_dataset = MixDataset(val_entries, sample_rate=sample_rate,
                               clip_seconds=config["clip_seconds"],
                               clips_per_epoch=config["val_clips"],

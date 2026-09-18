@@ -95,6 +95,9 @@ def evaluate_song(song_dir, model, anchor_patterns, device):
     center_err = [abs(45.0 - r["true_pan_deg"]) for r in learned]
     gain_db_err = [20 * math.log10(max(r["pred_gain"], 1e-9) / r["true_gain"]) for r in learned]
     med_off = sorted(gain_db_err)[len(gain_db_err) // 2] if gain_db_err else 0.0
+    # a constant gain, scale-corrected the same way, errs by |t - median(t)|
+    true_db = sorted(20 * math.log10(r["true_gain"]) for r in learned)
+    med_true = true_db[len(true_db) // 2] if true_db else 0.0
 
     return {
         "song": song_dir.name,
@@ -111,6 +114,7 @@ def evaluate_song(song_dir, model, anchor_patterns, device):
                                 - min(r["pred_pan_deg"] for r in learned)) if learned else float("nan"),
         "gain_mae_db_scalecorr": (sum(abs(g - med_off) for g in gain_db_err) / len(gain_db_err)) if gain_db_err else float("nan"),
         "gain_global_offset_db": med_off,
+        "gain_const_baseline_mae_db": (sum(abs(t - med_true) for t in true_db) / len(true_db)) if true_db else float("nan"),
         "balance_pred_db": balance_db(mix),
         "balance_target_db": balance_db(target),
         "rows": rows,
@@ -148,7 +152,8 @@ def main():
 
     n = len(results)
     print("\n=== mean over %d songs ===" % n)
-    for k in ("pan_mae_deg", "center_baseline_mae_deg", "gain_mae_db_scalecorr"):
+    for k in ("pan_mae_deg", "center_baseline_mae_deg", "gain_mae_db_scalecorr",
+              "gain_const_baseline_mae_db"):
         print(f"  {k:<28} {sum(r[k] for r in results) / n:6.2f}")
     print(f"  {'|balance| pred':<28} {sum(abs(r['balance_pred_db']) for r in results) / n:6.2f} dB")
     print(f"  {'|balance| target':<28} {sum(abs(r['balance_target_db']) for r in results) / n:6.2f} dB")

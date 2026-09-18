@@ -16,7 +16,7 @@ val_fraction: 0.1
 split_seed: 0
 batch_size: 16
 lr: 0.0003
-num_epochs: 200
+num_epochs: 120
 checkpoint_dir: /kaggle/working/checkpoints
 log_dir: /kaggle/working/runs
 device: auto
@@ -32,3 +32,13 @@ anchors:
   "*_RoomR": 90
   "Tree_L": 0
   "Tree_R": 90
+# Spheres (the only real mixes: 2 distinct engineer mixes over 4 songs)
+# would get ~7% of clips under uniform song sampling; give it 40% instead,
+# and stretch it with augmentation. stem_dropout needs mix_params.yaml per
+# Spheres song - the notebook writes it via scripts/fit_mix_params.py.
+sampling_fractions:
+  "Song*": 0.4
+augment:
+  patterns: ["Song*"]
+  level_db: 6.0
+  stem_dropout: 0.3
