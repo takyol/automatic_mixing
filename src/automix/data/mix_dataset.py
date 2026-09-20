@@ -117,6 +117,8 @@ class MixDataset(Dataset):
             keep = [i for i, path in enumerate(entry.stem_paths)
                     if not (torch.isnan(anchors[i]) and path.stem in params
                             and self._rng.random() < self._stem_dropout)]
+            if not keep:  # a song of few spots can lose all of them; keep one
+                keep = [self._rng.randrange(n)]
         return levels, keep
 
     def resample(self):

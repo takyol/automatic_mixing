@@ -16,7 +16,7 @@
 \usetikzlibrary{positioning,arrows.meta,fit,calc,backgrounds}
 \usepackage[hidelinks]{hyperref}
 
-\graphicspath{{../../reports/}}
+\graphicspath{{../../reports/figures/}}
 \setlength{\parskip}{0.45em}
 \setlength{\parindent}{0pt}
 
@@ -35,7 +35,7 @@
 \title{\textbf{Wie das Automix-Modell funktioniert}\\[0.3em]
 \large Schritt-für-Schritt-Erklärung als Grundlage für das Paper}
 \author{Projekt \emph{Automatic Mixing}, Deep Learning SS26}
-\date{Stand: 18.~September 2026}
+\date{Stand: 20.~September 2026}
 
 \begin{document}
 \maketitle
@@ -461,17 +461,18 @@ der beiden echten Spheres-Tonmeister bestätigen ihn weitgehend: Violine~1 bei
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\linewidth]{kaggle200_training_curves.png}
+\includegraphics[width=\linewidth]{training_curves_200ep.png}
 \caption{Verlustkurven des 200-Epochen-Laufs. Der beste Validierungsverlust
 wird in Epoche 121 erreicht; danach sinkt nur noch der Trainingsverlust
 (leichtes Overfitting).}
 \end{figure}
 
-\subsection{Nächster Schritt: Die echten Mischungen stärker nutzen}
+\subsection{Experiment: Die echten Mischungen stärker gewichten}
+\label{sec:spheresexp}
 Bei gleichverteilter Auswahl stammen nur etwa 7\,\% der Ausschnitte aus
-Spheres. Im laufenden Nachfolge-Experiment bekommt Spheres 40\,\% der
-Ausschnitte, und zwei Datenaugmentierungen erweitern die zwei echten
-Mischungen:
+Spheres, dem einzigen Datensatz mit echten Tonmeister-Entscheidungen. In einem
+zweiten Lauf bekam Spheres deshalb 40\,\% der Ausschnitte, erweitert um zwei
+Datenaugmentierungen:
 \begin{itemize}[nosep]
   \item \textbf{Pegelvariation:} Jede Spur wird beim Laden zufällig um bis zu
     $\pm\SI{6}{dB}$ lauter oder leiser gemacht, das Ziel bleibt gleich. Der
@@ -481,6 +482,46 @@ Mischungen:
     exakten Anteil vom Ziel abgezogen. Aus zwei Mischungen entstehen so viele
     gültige Teilbesetzungen.
 \end{itemize}
+Alles andere -- Aufteilung, Modell, Verlustfunktion, Synthmix-Ziele -- blieb
+gleich. \textbf{Kein einziges Maß wurde besser} (Tabelle~\ref{tab:spheresexp}).
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Maß & 200-Epochen-Lauf & Spheres-Gewichtung \\
+\midrule
+Pan-Fehler, unbekannte Stücke & \textbf{\SI{5.4}{\degree}} & \SI{6.6}{\degree} \\
+Pan-Fehler, Spheres (im Training) & \textbf{\SI{7.9}{\degree}} & \SI{8.2}{\degree} \\
+Gain-Fehler, Spheres (im Training) & \textbf{\SI{2.69}{dB}} & \SI{2.89}{dB} \\
+Trainingsverlust am Ende & \textbf{0,97} & 1,63 \\
+\bottomrule
+\end{tabular}
+\caption{Beide Läufe, jeweils mit dem Stand der letzten Epoche gemessen.}
+\label{tab:spheresexp}
+\end{table}
+
+Aufschlussreich ist die Art des Scheiterns. Der Trainingsverlust blieb bei
+1{,}63 stehen, obwohl die Lernrate schon stark reduziert war
+(Abbildung~\ref{fig:curves2}), und die Tschaikowsky-Pegel blieben beim Fehler
+eines konstanten Tipps -- \emph{obwohl} diese Stücke im Training waren, mit
+sechsfachem Gewicht. Das Modell lernt die zwei echten Mischungen also nicht
+auswendig, es kann sie überhaupt nicht nachbilden.
+
+\merke{Der Engpass ist der Pegel, nicht die Datenmenge. Ein über die Zeit
+gemitteltes VGGish-Embedding und ein Verlust, der nur Betragsspektren
+vergleicht, geben dem MLP zu wenig Information über den Pegel einer Spur. Die
+Pegelvariation hat die Aufgabe zusätzlich erschwert, ohne die nötige
+Information zu liefern.}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{training_curves_comparison.png}
+\caption{Links der 200-Epochen-Lauf (bestes Modell), rechts der Lauf mit
+Spheres-Gewichtung. Rechts liegen Trainings- und Validierungskurve am Ende
+übereinander: Das ist kein Overfitting, sondern Underfitting.}
+\label{fig:curves2}
+\end{figure}
 
 %=====================================================================
 \section{Schritt 8: Anwendung auf ein neues Stück}
@@ -499,7 +540,7 @@ Mischpult-Einstellung (Abbildung~\ref{fig:console}).
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\linewidth]{mixconsole_2026-09-15_1202_kaggle_symphony_41_551_2_orch.png}
+\includegraphics[width=\linewidth]{console_symphony.png}
 \caption{Vom Modell gewählte Einstellungen für ein zurückgehaltenes Stück
 (Sinfonie, 11 Spuren): oben die Panoramaposition, darunter der Fader. Die
 Spuren Tree\_L und Tree\_R (Hauptsystem) sind Anker.}
@@ -532,28 +573,109 @@ Das Modell reproduziert die Sitzordnung monoton (Violine~1 links bis
 Kontrabass rechts), mit einer leichten Stauchung zur Mitte: Äußere Instrumente
 landen etwas zu weit innen.
 
+\paragraph{Pegel werden kaum gelernt.} Der Gain-Fehler von \SI{1.37}{dB} auf
+den Validierungsstücken ist nicht besser als ein konstanter Pegel für alle
+Spuren (\SI{1.28}{dB}). Das ist kein Versäumnis des Modells: Die Synthmix-Gains
+werden unabhängig vom Klang gewürfelt und sind aus dem Audio grundsätzlich
+nicht vorhersagbar. Echte Pegelentscheidungen stehen nur in Spheres.
+
 \paragraph{Einstellungen echter Tonmeister (Spheres).} Gegen die
 zurückgerechneten Werte der zwei echten Mischungen erreicht das Modell einen
-Pan-Fehler von \SI{8.2}{\degree} (Mitte-Tipp: \SI{16.3}{\degree}) und einen
-Gain-Fehler von \SI{2.97}{dB} (konstanter Pegel: \SI{5.15}{dB}). Achtung:
-Spheres war im Training, dies ist also keine Messung auf Unbekanntem.
+Pan-Fehler von \SI{7.9}{\degree} (Mitte-Tipp: \SI{16.3}{\degree}) und einen
+Gain-Fehler von \SI{2.69}{dB} (konstanter Pegel: \SI{5.15}{dB}). Beim Pan ist
+das deutlich besser als der Baseline-Tipp, beim Gain nur etwa halb so gut wie
+er. Achtung: Spheres war im Training, dies ist also keine Messung auf
+Unbekanntem -- eine zurückgehaltene echte Mischung gibt es im Projekt nicht.
 
-\paragraph{Echte Konzertaufnahme (Wuppertal, 33--37 Spuren).} Qualitativ
-bewertet: In einem lyrischen Ausschnitt ordnet das Modell die Streicher korrekt
-von links nach rechts; in dichten Passagen staucht es fast alle Spots auf
-\SIrange{45}{60}{\degree} zusammen und wählt nahezu einheitliche Pegel.
+\paragraph{Echte Konzertaufnahme (Wuppertal, 33--37 Spuren).} Eine eigene
+Konzertaufnahme, weit außerhalb der Trainingsverteilung: 33--37 Spuren statt
+4--22, Stimmgruppen teils doppelt mikrofoniert, und alle Stützen mit
+Übersprechen. Bewertet wurde durch Hören, denn eine Referenzmischung gibt es
+nicht. In einem lyrischen Ausschnitt ordnet das Modell die Streicher korrekt
+von links nach rechts (Abbildung~\ref{fig:wuppertal}); in dichten Passagen
+staucht es fast alle Spots auf \SIrange{45}{60}{\degree} zusammen und wählt
+nahezu einheitliche Pegel.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{wuppertal/best_model_3_harfe_lyrisch.png}
+\caption{Eigene Konzertaufnahme, lyrischer Ausschnitt mit 33 Spuren. Die
+Streicher stehen in der richtigen Reihenfolge von links nach rechts; die
+Pegel liegen dagegen eng beieinander. Mit * markierte Spuren sind Anker.}
+\label{fig:wuppertal}
+\end{figure}
+
+%=====================================================================
+\section{Eignen sich eigene Aufnahmen als zusätzliches Trainingsmaterial?}
+\label{sec:eigene}
+
+Das Modell soll weiterhin allein aus fertigen Mischungen lernen. Damit hängt
+alles an einer Frage: Gibt es zu einer eigenen Aufnahme ein \emph{Ziel}, das
+ein statischer Gain/Pan-Mix überhaupt erreichen kann? Die Wuppertaler
+Konzertaufnahme eignet sich als Testfall, denn sie enthält eine Spur
+\texttt{SUMME} -- die Stereomischung des Tonmeisters über die volle Länge.
+
+\paragraph{Zeitversatz.} SUMME läuft den Einzelspuren um konstant
+\SI{12.1}{ms} hinterher (Kreuzkorrelation mit den Hauptmikrofonen). Ohne
+Ausgleich ist jede Rückrechnung wertlos ($R^2<0{,}05$); mit Ausgleich lässt
+sich die Mischung gut als statische Summe erklären
+($R^2 = 0{,}97$ im Solo-Ausschnitt, $0{,}80$ im Tutti). Die zurückgerechneten
+Werte bestätigen unabhängig die Aufstellung des Hauptsystems und zeigen, was
+der Tonmeister getan hat: Hauptsystem und Außenmikrofone bei
+\SIrange{-7}{-11}{dB} tragen die Mischung, die Gesangsstützen liegen
+\SIrange{12}{14}{dB} darunter, alle Instrumentenstützen unter \SI{-27}{dB}.
+
+\paragraph{Wie gut ist ein Ziel erreichbar?} Für jedes Kandidaten-Ziel haben
+wir Gain und Pan direkt auf das Ziel optimiert -- das ist die Grenze, die kein
+Modell unterbieten kann (Abbildung~\ref{fig:feasibility}).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{target_feasibility.png}
+\caption{Bestmöglicher Verlust je Ziel, gemessen in der Trainings-Verlust\-funktion.
+„Stützen“ ist der Energieanteil der Stützmikrofone in der optimalen Mischung:
+Er sagt, wie viel über sie überhaupt zu lernen wäre.}
+\label{fig:feasibility}
+\end{figure}
+
+\begin{itemize}[nosep]
+  \item \textbf{Das Hauptsystem als Ziel ist sinnlos.} Die verankerten
+    Hauptmikrofone geben es exakt wieder, die optimale Lösung dreht alle
+    Stützen auf null (Energieanteil 0\,\%). Genau in diese Falle führt auch
+    das Tree-Ziel von rohem SynthSOD.
+  \item \textbf{Ohne Hauptsystem im Eingang ist das Ziel unerreichbar}
+    (Verlust 5{,}21). Stützmikrofone allein können das Stereobild eines
+    gespreizten Hauptsystems nicht erzeugen -- der Grund, warum es Anker gibt.
+  \item \textbf{SUMME ist ein echtes Ziel.} In den beiden Ausschnitten mit
+    gestützten Solisten liegt die Grenze bei 0{,}70 bzw.\ 0{,}74, deutlich
+    unter dem heutigen Validierungsverlust von 1{,}40, und die Stützen tragen
+    \SIrange{10}{12}{\percent} der Energie.
+  \item \textbf{Aber nur in Teilen des Konzerts.} In Harfen- und
+    Tutti-Ausschnitt steigt die Grenze auf 2{,}2 bis 2{,}6 und der Anteil der
+    Stützen fällt auf \SIrange{1}{2}{\percent}. Dort dominieren Reglerfahrten,
+    Hall und Klangbearbeitung -- alles, was ein statisches Modell nicht
+    abbilden kann. Training auf solchen Ausschnitten hieße, Rauschen zu lernen.
+\end{itemize}
+
+\merke{Der größte Nutzen der eigenen Aufnahme liegt nicht im Training, sondern
+in der Bewertung: Sie liefert die \emph{erste zurückgehaltene echte Mischung}
+des Projekts. Als Trainingsmaterial taugt sie nur ausschnittweise, mit
+Zeitausgleich und einer Mindestgüte der Rückrechnung -- und sie behebt nicht
+das eigentliche Problem, den Pegel.}
 
 %=====================================================================
 \section{Grenzen und offene Punkte}
 \label{sec:grenzen}
 
 \begin{itemize}
-  \item \textbf{Gains aus Synthmix sind nicht lernbar.} Die Spot-Pegel werden
-    dort zufällig gewürfelt, unabhängig vom Klang. Das Modell kann daraus nur
-    den Mittelwert lernen (Gain-Fehler \SI{1.37}{dB} gegenüber \SI{1.5}{dB}
-    für einen konstanten Tipp). Echte Pegelentscheidungen enthält nur Spheres,
-    und dort unterscheiden sie sich stark zwischen den Stücken: Bei Mozart
-    stehen die Streicher vorn, bei Tschaikowsky die Holzbläser.
+  \item \textbf{Der Pegel ist der Engpass.} Die Synthmix-Gains sind gewürfelt
+    und damit grundsätzlich nicht lernbar; echte Pegelentscheidungen enthält
+    nur Spheres, und dort unterscheiden sie sich stark zwischen den Stücken
+    (bei Mozart stehen die Streicher vorn, bei Tschaikowsky die Holzbläser).
+    Das Experiment in Abschnitt~\ref{sec:spheresexp} zeigt, dass mehr Gewicht
+    auf diesen Daten nicht genügt: Das Modell bildet die echten Pegel selbst
+    dann nicht nach, wenn es auf ihnen trainiert. Ein gemitteltes Embedding
+    und ein Verlust auf Betragsspektren sind dafür zu grobe Werkzeuge.
   \item \textbf{Stauchung zur Mitte.} Bei Unsicherheit ist die Mitte der
     sicherste Tipp; das Modell nutzt die Stereobreite nicht voll aus.
   \item \textbf{Abstand zu echten Aufnahmen.} Die synthetischen Spots haben
@@ -562,8 +684,9 @@ von links nach rechts; in dichten Passagen staucht es fast alle Spots auf
   \item \textbf{Statische Einstellungen.} Keine Pegelautomation, kein EQ, kein
     Hall, keine Laufzeitkorrektur zwischen Spot und Hauptsystem.
   \item \textbf{Wenig echte Referenzen.} Zwei echte Mischungen reichen nicht,
-    um stückabhängige Pegelentscheidungen zu lernen, und es gibt bisher
-    keine zurückgehaltene echte Mischung als Testfall.
+    um stückabhängige Pegelentscheidungen zu lernen, und es gibt bisher keine
+    zurückgehaltene echte Mischung als Testfall. Die Wuppertaler Aufnahme kann
+    diese Lücke schließen (Abschnitt~\ref{sec:eigene}).
 \end{itemize}
 
 %=====================================================================
@@ -579,7 +702,7 @@ Einleitung & Abschnitt 1: Aufgabe, Hauptsystem vs.\ Spots, Motivation für stati
 Verwandte Arbeiten & Differenzierbares Mischpult \cite{steinmetz2021}, VGGish \cite{hershey2017}, MR-STFT-Verlust \cite{yamamoto2020,arik2019}; L/R-Invarianz bei Steinmetz vs.\ feste Orchesteraufstellung. \\
 Methode & Abschnitte 3--7 und Abbildung~\ref{fig:pipeline}; Gleichungen \eqref{eq:mix}, \eqref{eq:ctx}, \eqref{eq:loss}. \\
 Daten & Abschnitt~\ref{sec:daten}: Spheres, SynthSOD, Synthmix; Sitzplan und dessen Bestätigung durch echte Tonmeister. \\
-Experimente & Pan-Kollaps und dessen Behebung (Verlust mit Kanaltermen), 200-Epochen-Lauf, Spheres-Gewichtung. \\
+Experimente & Pan-Kollaps und dessen Behebung (Verlust mit Kanaltermen), 200-Epochen-Lauf, Spheres-Gewichtung (Abschnitt~\ref{sec:spheresexp}), Eignung eigener Aufnahmen (Abschnitt~\ref{sec:eigene}). \\
 Ergebnisse & Pan-Fehler mit Baselines und Rauschgrenze; Spheres; Wuppertal als qualitative Fallstudie. \\
 Diskussion & Abschnitt~\ref{sec:grenzen}. \\
 \bottomrule
@@ -587,8 +710,10 @@ Diskussion & Abschnitt~\ref{sec:grenzen}. \\
 \end{table}
 
 \paragraph{Noch zu ergänzen.} Quellenangaben für den Spheres- und den
-SynthSOD-Datensatz (in diesem Dokument noch nicht zitiert), die Ergebnisse des
-laufenden Spheres-Experiments sowie Hörbeispiele.
+SynthSOD-Datensatz. Beide sind hier bewusst nicht zitiert: Die genauen
+Veröffentlichungen liegen uns nicht vor, und geratene Literaturangaben wären
+schlimmer als eine offene Lücke. Sie gehören in Abschnitt~\ref{sec:daten} und
+ins Literaturverzeichnis, bevor das Paper eingereicht wird.
 
 \begin{thebibliography}{9}\small
 \bibitem{steinmetz2021} C.~J. Steinmetz, J.~Pons, S.~Pascual, J.~Serrà:

@@ -18,6 +18,9 @@ The network only learns to predict gain and pan. It does not generate audio itse
   - `inference.py` - renders a mix from stems using a trained checkpoint
 - `scripts/` - command line entry points (data prep, training, inference, diagnostics)
 - `configs/` - YAML config files used by the scripts
+- `reports/` - the experiment journal (`experiment_log.md`), the consolidated results write-up (`evaluation.md`) and the figures both refer to
+- `docs/modell_erklaerung/` - a step-by-step explanation of the model in German (LaTeX source + PDF), written as the groundwork for the paper
+- `kaggle/` - the notebook used to train on Kaggle's free GPU (see `KAGGLE.md`)
 
 ## Setup
 
@@ -92,6 +95,46 @@ Once you have a trained checkpoint, mix a folder of stems. Pass the training con
 
 ```
 python scripts/infer.py --stems-dir path/to/stems --checkpoint checkpoints_spheres/best.pt --output mix.wav --config configs/spheres.yaml
+```
+
+## Mixing a raw session
+
+`scripts/render_session.py` skips the prep step and mixes an excerpt straight out of a recorder folder (one WAV per track), which is how the Wuppertal concert in `reports/evaluation.md` was rendered:
+
+```
+python scripts/render_session.py --tracks-dir path/to/session --start 1500 --seconds 90 \
+    --checkpoint checkpoints/<run>/last.pt --config configs/kaggle.yaml \
+    --rename "A=Main_L,B=Main_R,C=Main_C,OUT A=Out_L,OUT B=Out_R" \
+    --exclude "TC,SUR A,SUR B,SUMME" --out renders/session_1
+```
+
+`--rename` maps recorder track names onto the `anchors` naming so the main array keeps its fixed pan; `--exclude` drops timecode, surround and sum tracks. It writes the mix, a main-array-only reference to listen against, a console figure and the predicted values per track.
+
+## Measuring against ground truth
+
+Where the true gain and pan are known, `scripts/eval_synthmix.py` reports the recovery error in degrees and dB instead of a loss value:
+
+```
+python scripts/eval_synthmix.py --root data_processed_synthmix --checkpoint checkpoints/<run>/best.pt \
+    --config configs/kaggle.yaml --out eval.json
+```
+
+Synthmix songs ship their `mix_params.yaml` from the generator. For a **real** mix that is a static gain/pan sum of its stems, `scripts/fit_mix_params.py` recovers the engineer's settings into the same format by non-negative least squares, and prints the fit R² so a mix that is *not* such a sum is easy to spot (the Spheres mixes fit at R² = 1.000):
+
+```
+python scripts/fit_mix_params.py --root data_processed --pattern "Song*" --config configs/kaggle.yaml
+```
+
+Those recovered parameters also enable two optional training-config keys, both train-split only (validation sampling stays uniform): `sampling_fractions` ({song glob: share of draws}) upweights a corpus, and `augment` ({patterns, level_db, stem_dropout}) varies stem levels and drops stems while subtracting their exact share from the target. Both keys are off in the shipped configs: the experiment that used them (`reports/evaluation.md`) did not improve the model, and its exact config is preserved in `checkpoints/2026-09-18_1026_kaggle/config.yaml`.
+
+To judge whether some *other* recording could serve as training material, `scripts/target_feasibility.py` fits gain and pan straight to a candidate target and reports the resulting loss floor plus how much mix energy the non-anchored tracks carry. `reports/evaluation.md` walks through the reference values and the verdict for our own concert recording.
+
+## Tests
+
+`./venv/bin/pytest` runs the unit tests in `tests/` (pan law, anchor mapping, sampling weights, parameter recovery, and the dataset's target correction under stem dropout). They need no data and finish in about a second. The end-to-end path — VGGish, training loop, checkpointing — is covered by the smoke config instead:
+
+```
+python scripts/train.py --config configs/smoke_test.yaml
 ```
 
 ## Diagnostics
