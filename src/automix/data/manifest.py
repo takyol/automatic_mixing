@@ -1,5 +1,6 @@
 import random
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from pathlib import Path
 from automix.audio_io import frame_count
 
@@ -39,11 +40,23 @@ def build_manifest(processed_root: Path) -> list:
     return entries
 
 
-def split_train_val(entries: list, val_fraction: float = 0.1, seed: int = 0):
-    """Splits songs (not clips) into train/val, deterministic given seed."""
-    shuffled = list(entries)
+def split_train_val(entries: list, val_fraction: float = 0.1, seed: int = 0,
+                    val_patterns: list = None):
+    """Splits songs (not clips) into train/val, deterministic given seed.
+
+    `val_patterns` (song_id globs) forces matching songs into val and takes
+    them out of the random draw. Needed when songs are windows cut from one
+    long session: neighbouring windows are musically near-identical, so a
+    random split would leak train material into val. Because the forced
+    songs are removed *before* shuffling, the rest of the corpus keeps the
+    exact split it had without them - val losses stay comparable to earlier
+    runs on that part.
+    """
+    forced = [e for e in entries if any(fnmatchcase(e.song_id, p) for p in val_patterns or [])]
+    forced_ids = {e.song_id for e in forced}
+    shuffled = [e for e in entries if e.song_id not in forced_ids]
     random.Random(seed).shuffle(shuffled)
     n_val = max(1, round(len(shuffled) * val_fraction)) if shuffled else 0
-    val = shuffled[:n_val]
+    val = forced + shuffled[:n_val]
     train = shuffled[n_val:]
     return train, val

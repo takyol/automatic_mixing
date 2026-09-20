@@ -1,0 +1,36 @@
+# Prep config for a raw multitrack session with the engineer's stereo mix
+# (scripts/prepare_session.py). The session is cut into windows; each window
+# becomes a corpus song with the aligned mix as its target.
+raw_dir: "/Volumes/T7 2/Aufnahmen/Klassik/20211206_Wuppertal/Wuppertal-Multitrack"
+output_root: data_processed_wuppertal
+song_prefix: wup
+mix_track: SUMME.wav
+# Console latency: the mix track lags the multitrack. null = estimate it by
+# cross-correlation (measured 12.1 ms here; an uncompensated offset makes
+# the fit - and the training target - meaningless).
+lag_seconds: 0.0121
+window_seconds: 30.0
+stride_seconds: 60.0
+# Keep only windows the static gain/pan mixer could actually reproduce.
+# Soloist passages reach R^2 ~0.98, dense tutti ~0.82 (reverb, fader moves,
+# processing) - see reports/evaluation.md.
+min_r2: 0.95
+min_dbfs: -55.0      # skips applause and gaps between movements
+max_windows: null
+# Normalize each window so its target lands at this RMS level, scaling the
+# tracks by the same factor (the fitted gains stay valid). A concert sits
+# ~20 dB below the other corpora, and without this those windows would
+# dominate the loss of a mixed corpus. -27 dBFS is the other corpora's
+# typical target level.
+target_level_db: -27.0
+# Recorder track names -> the naming the anchor patterns expect.
+rename:
+  "A": Main_L
+  "B": Main_R
+  "C": Main_C
+  "OUT A": Out_L
+  "OUT B": Out_R
+exclude: ["TC", "SUR A", "SUR B"]
+# Anchor patterns decide which tracks count as fixed-pan in mix_params.yaml;
+# a path to a training config reuses its `anchors` section.
+anchors: configs/kaggle.yaml

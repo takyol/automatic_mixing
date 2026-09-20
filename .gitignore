@@ -1,6 +1,6 @@
 # Datasets and generated outputs
 data/
-data_processed/
+data_processed*/
 checkpoints/
 checkpoints_smoke/
 runs/

@@ -72,6 +72,14 @@ python scripts/generate_synthmix.py --config configs/synthmix_gen.yaml  # -> dat
 
 Stems are hard-linked, not copied, so the extra disk cost is only the new target files.
 
+**A raw session with the engineer's own mix** (one WAV per recorder track plus a stereo mix track) is cut into windows by `scripts/prepare_session.py`, each window becoming a song whose target is that mix:
+
+```
+python scripts/prepare_session.py --config configs/wuppertal_prep.yaml [--dry-run]
+```
+
+Two gates make the result trustworthy, and `--dry-run` reports them without writing audio: the mix track's console latency is compensated (12.1 ms for our concert — an uncompensated offset makes the target meaningless), and every window is fitted by NNLS and kept only above `min_r2`, so training never sees a target the static mixer could not reproduce. `target_level_db` normalizes tracks and target by one factor so a quiet concert cannot dominate a mixed corpus' loss; the fitted gains stay valid because the mix equation is linear in both sides.
+
 ## Training
 
 Each training config pairs one processed corpus with its own checkpoint and log directories, so runs never overwrite each other. Pick the config for what you want to train on:
@@ -82,6 +90,9 @@ Each training config pairs one processed corpus with its own checkpoint and log 
 | SynthSOD only | `python scripts/train.py --config configs/synthsod.yaml` | `data_processed_synthsod` | `checkpoints_synthsod/` |
 | Synthetic mixes | `python scripts/train.py --config configs/synthmix.yaml` | `data_processed_synthmix` | `checkpoints_synthmix/` |
 | Both datasets | `python scripts/train.py --config configs/combined.yaml` | `data_processed_all` | `checkpoints_combined/` |
+| Synthmix + Spheres + a real concert | `python scripts/train.py --config configs/kaggle_wuppertal.yaml` | prepped corpora merged into one root | `checkpoints/` |
+
+`val_song_patterns` forces the listed songs into the validation split and takes them out of the random draw. Windows cut from one session need this: neighbouring windows are musically near-identical, so a random split would leak train material into val. Forcing them out *before* the draw also leaves the rest of the corpus with exactly the split it had without them, so val losses stay comparable to earlier runs.
 
 Every run gets its own name, `<date>_<time>_<config name>` (e.g. `2026-07-13_2352_spheres`), or a custom one via an optional `run_name` key in the config. Checkpoints go to `<checkpoint_dir>/<run name>/` (alongside a copy of the config used), TensorBoard logs to `<log_dir>/<run name>/`. Point TensorBoard at the root to compare runs: `tensorboard --logdir runs/`.
 

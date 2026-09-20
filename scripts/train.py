@@ -29,7 +29,8 @@ def main():
 
     entries = build_manifest(Path(config["data_processed_root"]))
     train_entries, val_entries = split_train_val(
-        entries, val_fraction=config["val_fraction"], seed=config["split_seed"])
+        entries, val_fraction=config["val_fraction"], seed=config["split_seed"],
+        val_patterns=config.get("val_song_patterns"))
 
     sample_rate = config["sample_rate"]
     anchor_patterns = config.get("anchors")
@@ -63,6 +64,7 @@ def main():
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(args.config, checkpoint_dir / "config.yaml")
     print(f"Run name: {run_name}")
+    print(f"{len(train_entries)} train songs, {len(val_entries)} val songs")
 
     train(
         model, train_dataset, val_dataset,

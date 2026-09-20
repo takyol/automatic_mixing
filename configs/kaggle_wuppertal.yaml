@@ -1,0 +1,52 @@
+# Kaggle training config for the run that adds a real concert recording.
+#
+# Corpus (built by the notebook's prep cell): Synthmix (synthetic targets
+# with known gain/pan) + Spheres (2 engineer mixes) + Wuppertal (30 s
+# windows of one concert, target = the engineer's SUMME track, kept only
+# where a static gain/pan sum reproduces it - see configs/wuppertal_prep.yaml
+# and reports/evaluation.md).
+#
+# Deliberately unchanged against the best run (2026-09-15_1202_kaggle):
+# uniform song sampling, no augmentation, same loss, same anchors, same
+# split seed. Only the data differs, so the comparison stays clean.
+# With 33 Wuppertal windows in a 101-song corpus, uniform sampling already
+# gives the concert ~27% of the clips.
+data_processed_root: /kaggle/working/data_processed
+sample_rate: 44100
+clip_seconds: 5.0
+clips_per_epoch: 1000
+val_clips: 200
+val_fraction: 0.1
+split_seed: 0
+batch_size: 16
+lr: 0.0003
+num_epochs: 120
+checkpoint_dir: /kaggle/working/checkpoints
+log_dir: /kaggle/working/runs
+device: auto
+checkpoint_every: 5
+num_workers: 4
+# Held-out real mix - the thing the project never had. A contiguous block
+# from minute 44 to 63 of the concert: neighbouring windows are musically
+# near-identical, so a random split would leak. Removing them before the
+# random draw keeps the Synthmix/Spheres val set identical to earlier runs.
+val_song_patterns:
+  - wup_002640s
+  - wup_002760s
+  - wup_002820s
+  - wup_002880s
+  - wup_003180s
+  - wup_003360s
+  - wup_003720s
+  - wup_003780s
+# Fixed-pan anchor tracks: Spheres main array + room pair, the
+# SynthSOD/Synthmix tree channels, and Wuppertal's Decca tree plus
+# outriggers (renamed to Main_L/C/R and Out_L/R during prep).
+anchors:
+  "*_L": 0
+  "*_C": 45
+  "*_R": 90
+  "*_RoomL": 0
+  "*_RoomR": 90
+  "Tree_L": 0
+  "Tree_R": 90
