@@ -209,6 +209,51 @@ Reading, for reference the trained model's validation loss is 1.40:
   static model cannot express — fader moves within the excerpt, reverb,
   processing — so training on them would mostly fit noise.
 
+### What happened when we trained on it
+
+Run `2026-09-20_1134_wuppertal`: 33 concert windows (16.5 min) added to the 68
+songs, everything else unchanged. Two caveats about the setup itself:
+
+- **The validation set changed more than intended.** Forcing 8 windows into val
+  takes them out of the random draw, but the 25 remaining windows join the
+  shuffle pool, which re-permutes everything. The run ended up with 84 train /
+  17 val songs, and **6 of the 7 previously held-out Synthmix songs moved into
+  training**. The reported val loss (4.04) is therefore not comparable to the
+  earlier 1.40 — neither in content nor in composition.
+- **One useful accident**: the draw put `Song3_Tschai1` into val, so the project
+  finally has a held-out *real* engineer mix.
+
+Measured per group instead of by the aggregate loss:
+
+| Held out from | Metric | 200-epoch model | Concert-trained model |
+|---|---|---|---|
+| both runs — `string_quartet_13_3` | pan MAE | **4.20°** | 6.53° |
+| both runs — `string_quartet_13_3` | MR-STFT loss | **1.26** | 2.68 |
+| new run only — `Song3_Tschai1` (real mix) | pan MAE (center 14.18°) | 6.11° (in-sample) | 8.77° |
+| new run only — `Song3_Tschai1` | gain MAE (constant 4.92 dB) | 3.76 dB (in-sample) | 6.29 dB |
+| both — 9 concert windows | MR-STFT loss | 18.91 | **3.27** |
+| both — 9 concert windows | pan MAE (center 28.6°) | 29.20° | 28.65° |
+| both — 9 concert windows | gain MAE (constant 8.70 dB) | 8.62 dB | 9.46 dB |
+
+The loss on concert material improves six-fold, and that is exactly what makes
+the result interesting: **the parameter metrics show the model did not learn
+the engineer's decisions at all.** Its pans match a constant-center predictor to
+within half a degree, and its gains are *worse* than one constant level for
+every track (12.69 dB for `last.pt`). What it learned is the gross level regime
+for a 33–37 track input — how far down everything has to go — which the loss
+rewards heavily and which the old model, never having seen more than 22 tracks,
+got badly wrong.
+
+That gain came at a real cost everywhere else: on a song held out by *both*
+runs, pan error rose from 4.20° to 6.53° and the loss doubled. On the held-out
+real mix, the model's levels are worse than a constant.
+
+**Conclusion:** one concert is one balance philosophy, one hall, one ensemble.
+16.5 minutes of it biases the model rather than teaching a transferable rule,
+and the MR-STFT loss hides this — it improved six-fold while the actual mixing
+decisions stayed at baseline. `2026-09-15_1202_kaggle/last.pt` remains the
+project's model.
+
 ### Recommendation
 
 1. **Highest value: use it as the project's first held-out real mix.** The
@@ -216,11 +261,10 @@ Reading, for reference the trained model's validation loss is 1.40:
    fixes that at zero risk to training: fit `mix_params.yaml` on excerpts that
    pass a `min_r2` gate and score the model against them the same way Spheres
    is scored.
-2. **As training data, only excerpt-wise and gated.** Align by 12.1 ms, fit
-   each candidate excerpt, and keep only those above ~0.95 R². Expect a modest
-   effect: the target is 88–99 % main array, so most of what the model would
-   learn is "the main array carries the mix", which it already learns from
-   anchors.
+2. **As training data it did not work** (see above). If it is tried again, the
+   missing ingredient is diversity, not more minutes of the same concert:
+   several sessions, halls and engineers. A single session should at most be
+   one corpus among many, and its share of the draws kept small.
 3. **What it does not fix:** the level bottleneck. SUMME's spot levels are
    mixing decisions like Spheres', and the experiment above showed the model
    cannot fit those even when trained directly on them.

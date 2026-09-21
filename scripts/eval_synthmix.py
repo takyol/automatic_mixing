@@ -90,7 +90,13 @@ def evaluate_song(song_dir, model, anchor_patterns, device):
             "true_gain": None if t is None else t["gain"],
         })
 
+    # A fitted real mix can put a track at exactly gain 0 (the engineer had
+    # that spot closed). Its pan is then undefined and its gain error
+    # infinite, so such tracks carry no information about the model and are
+    # left out of the metrics - `n_muted` reports how many.
     learned = [r for r in rows if not r["anchored"] and r["true_pan_deg"] is not None]
+    muted = [r for r in learned if r["true_gain"] is None or r["true_gain"] < 1e-6]
+    learned = [r for r in learned if r not in muted]
     pan_err = [abs(r["pred_pan_deg"] - r["true_pan_deg"]) for r in learned]
     center_err = [abs(45.0 - r["true_pan_deg"]) for r in learned]
     gain_db_err = [20 * math.log10(max(r["pred_gain"], 1e-9) / r["true_gain"]) for r in learned]
@@ -103,6 +109,7 @@ def evaluate_song(song_dir, model, anchor_patterns, device):
         "song": song_dir.name,
         "n_stems": len(stem_paths),
         "n_learned": len(learned),
+        "n_muted": len(muted),
         "excerpt": excerpt,
         "pan_mae_deg": sum(pan_err) / len(pan_err) if pan_err else float("nan"),
         "pan_median_deg": sorted(pan_err)[len(pan_err) // 2] if pan_err else float("nan"),
