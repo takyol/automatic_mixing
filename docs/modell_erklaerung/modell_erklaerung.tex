@@ -35,7 +35,7 @@
 \title{\textbf{Wie das Automix-Modell funktioniert}\\[0.3em]
 \large Schritt-für-Schritt-Erklärung als Grundlage für das Paper}
 \author{Projekt \emph{Automatic Mixing}, Deep Learning SS26}
-\date{Stand: 20.~September 2026}
+\date{Stand: 22.~September 2026}
 
 \begin{document}
 \maketitle
@@ -587,6 +587,12 @@ das deutlich besser als der Baseline-Tipp, beim Gain nur etwa halb so gut wie
 er. Achtung: Spheres war im Training, dies ist also keine Messung auf
 Unbekanntem -- eine zurückgehaltene echte Mischung gibt es im Projekt nicht.
 
+\paragraph{Zurückgehaltene echte Mischung.} Im Lauf aus
+Abschnitt~\ref{sec:konzertlauf} landete eine der Spheres-Mischungen durch die
+Zufallsziehung in der Bewertung -- die erste echte Mischung, die das Modell nie
+gesehen hat. Pan-Fehler \SI{8.77}{\degree} (Mitte-Tipp \SI{14.18}{\degree}),
+Gain-Fehler \SI{6.29}{dB} (konstanter Pegel \SI{4.92}{dB}).
+
 \paragraph{Echte Konzertaufnahme (Wuppertal, 33--37 Spuren).} Eine eigene
 Konzertaufnahme, weit außerhalb der Trainingsverteilung: 33--37 Spuren statt
 4--22, Stimmgruppen teils doppelt mikrofoniert, und alle Stützen mit
@@ -657,11 +663,55 @@ Er sagt, wie viel über sie überhaupt zu lernen wäre.}
     abbilden kann. Training auf solchen Ausschnitten hieße, Rauschen zu lernen.
 \end{itemize}
 
-\merke{Der größte Nutzen der eigenen Aufnahme liegt nicht im Training, sondern
-in der Bewertung: Sie liefert die \emph{erste zurückgehaltene echte Mischung}
-des Projekts. Als Trainingsmaterial taugt sie nur ausschnittweise, mit
-Zeitausgleich und einer Mindestgüte der Rückrechnung -- und sie behebt nicht
-das eigentliche Problem, den Pegel.}
+\subsection{Das Konzert im Training: Der Verlust täuscht}
+\label{sec:konzertlauf}
+
+Wir haben es ausprobiert. Aus dem Konzert wurden \num{124} Fenster von
+\SI{30}{s} geprüft; \num{11} waren zu leise (Applaus, Pausen), \num{80} lagen
+unter der Güteschwelle, \num{33} blieben übrig -- \SI{16.5}{min} Material mit
+$R^2$ zwischen $0{,}95$ und $1{,}00$, alle aus den ersten 63 Konzertminuten.
+Diese kamen zu den 68 bisherigen Stücken dazu, sonst wurde nichts geändert.
+Ein zusammenhängender Block von Minute 44 bis 63 wurde zurückgehalten;
+benachbarte Fenster klingen fast gleich, eine zufällige Aufteilung würde
+Trainingsmaterial in die Bewertung durchsickern lassen.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Zurückgehalten von & Maß & bisheriges Modell & Konzert-Modell \\
+\midrule
+beiden Läufen & Pan-Fehler (Streichquartett) & \textbf{\SI{4.20}{\degree}} & \SI{6.53}{\degree} \\
+beiden Läufen & Verlust (Streichquartett) & \textbf{1,26} & 2,68 \\
+beiden Läufen & Verlust (9 Konzertfenster) & 18,91 & \textbf{3,27} \\
+beiden Läufen & Pan-Fehler (Konzert; Mitte \SI{28.6}{\degree}) & \SI{29.20}{\degree} & \SI{28.65}{\degree} \\
+beiden Läufen & Gain-Fehler (Konzert; konstant \SI{8.70}{dB}) & \SI{8.62}{dB} & \SI{9.46}{dB} \\
+nur neuem Lauf & Gain-Fehler (echte Mischung; konstant \SI{4.92}{dB}) & -- & \SI{6.29}{dB} \\
+\bottomrule
+\end{tabular}
+\caption{Gruppenweise gemessen, weil der Validierungsverlust der beiden Läufe
+nicht vergleichbar ist: Der Bewertungssatz hat sich durch die neuen Fenster
+verändert.}
+\end{table}
+
+Auf Konzertmaterial fällt der Verlust um das Sechsfache -- und trotzdem hat das
+Modell das Mischen nicht gelernt. Seine Positionen treffen den Mitte-Tipp auf
+ein halbes Grad genau, seine Pegel sind schlechter als ein einziger konstanter
+Wert für alle Spuren. Gelernt hat es das grobe \emph{Pegelregime} einer
+Aufnahme mit 33--37 Spuren, also wie weit alles heruntergezogen werden muss.
+Das belohnt der Verlust stark, denn es betrifft jede Spur gleichzeitig; das
+bisherige Modell kannte höchstens 22 Spuren und lag hier weit daneben.
+
+Gleichzeitig hat der Zugewinn anderswo gekostet: Auf einem Stück, das
+\emph{beide} Läufe zurückgehalten haben, stieg der Pan-Fehler von
+\SI{4.20}{\degree} auf \SI{6.53}{\degree} und der Verlust verdoppelte sich.
+
+\merke{Ein einzelnes Konzert ist eine Mischphilosophie, ein Saal, eine
+Besetzung. \SI{16.5}{min} davon verschieben das Modell in Richtung dieser einen
+Aufnahme, statt ihm eine übertragbare Regel beizubringen. Der größte Nutzen der
+eigenen Aufnahme liegt deshalb in der \emph{Bewertung}: Sie liefert die erste
+zurückgehaltene echte Mischung des Projekts. Und sie zeigt, wie wenig der
+Verlustwert allein aussagt.}
 
 %=====================================================================
 \section{Grenzen und offene Punkte}
@@ -684,9 +734,19 @@ das eigentliche Problem, den Pegel.}
   \item \textbf{Statische Einstellungen.} Keine Pegelautomation, kein EQ, kein
     Hall, keine Laufzeitkorrektur zwischen Spot und Hauptsystem.
   \item \textbf{Wenig echte Referenzen.} Zwei echte Mischungen reichen nicht,
-    um stückabhängige Pegelentscheidungen zu lernen, und es gibt bisher keine
-    zurückgehaltene echte Mischung als Testfall. Die Wuppertaler Aufnahme kann
-    diese Lücke schließen (Abschnitt~\ref{sec:eigene}).
+    um stückabhängige Pegelentscheidungen zu lernen. Im Lauf aus
+    Abschnitt~\ref{sec:konzertlauf} wurde erstmals eine echte Mischung
+    zurückgehalten (Tschaikowsky): Dort liegt der Pan-Fehler bei
+    \SI{8.77}{\degree} gegenüber \SI{14.18}{\degree} für den Mitte-Tipp, der
+    Gain-Fehler aber bei \SI{6.29}{dB} und damit \emph{schlechter} als ein
+    konstanter Pegel (\SI{4.92}{dB}). Positionen überträgt das Modell also auf
+    unbekannte echte Mischungen, Pegel nicht.
+  \item \textbf{Der Verlustwert ist ein schlechter Ratgeber.} Er verbesserte
+    sich auf Konzertmaterial um das Sechsfache, während die Reglerentscheidungen
+    auf dem Niveau trivialer Vergleichswerte blieben
+    (Abschnitt~\ref{sec:konzertlauf}). Aussagen über die Qualität einer
+    Mischung sollten deshalb immer an Grad und Dezibel gemessen werden, nicht
+    am Verlust.
 \end{itemize}
 
 %=====================================================================
@@ -704,7 +764,7 @@ Methode & Abschnitte 3--7 und Abbildung~\ref{fig:pipeline}; Gleichungen \eqref{e
 Daten & Abschnitt~\ref{sec:daten}: Spheres, SynthSOD, Synthmix; Sitzplan und dessen Bestätigung durch echte Tonmeister. \\
 Experimente & Pan-Kollaps und dessen Behebung (Verlust mit Kanaltermen), 200-Epochen-Lauf, Spheres-Gewichtung (Abschnitt~\ref{sec:spheresexp}), Eignung eigener Aufnahmen (Abschnitt~\ref{sec:eigene}). \\
 Ergebnisse & Pan-Fehler mit Baselines und Rauschgrenze; Spheres; Wuppertal als qualitative Fallstudie. \\
-Diskussion & Abschnitt~\ref{sec:grenzen}. \\
+Diskussion & Abschnitt~\ref{sec:grenzen}; besonders: Verlust vs.\ tatsächliche Reglerentscheidungen, und warum eine einzelne Aufnahme das Modell verschiebt statt es zu verbessern. \\
 \bottomrule
 \end{tabularx}
 \end{table}
